@@ -814,9 +814,13 @@ UniValue getblock(const Config &config, const JSONRPCRequest &request) {
     std::string strHash = request.params[0].get_str();
     uint256 hash(uint256S(strHash));
 
-    bool fVerbose = true;
+    int verbosity = 1;
     if (request.params.size() > 1) {
-        fVerbose = request.params[1].get_bool();
+        if (request.params[1].isNum()) {
+            verbosity = request.params[1].get_int();
+        } else {
+            verbosity = request.params[1].get_bool() ? 1 : 0;
+        }
     }
 
     if (mapBlockIndex.count(hash) == 0) {
@@ -839,7 +843,7 @@ UniValue getblock(const Config &config, const JSONRPCRequest &request) {
         throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
     }
 
-    if (!fVerbose) {
+    if (verbosity <= 0) {
         CDataStream ssBlock(SER_NETWORK,
                             PROTOCOL_VERSION | RPCSerializationFlags());
         ssBlock << block;
@@ -847,7 +851,7 @@ UniValue getblock(const Config &config, const JSONRPCRequest &request) {
         return strHex;
     }
 
-    return blockToJSON(config, block, pblockindex);
+    return blockToJSON(config, block, pblockindex, verbosity >= 2);
 }
 
 struct CCoinsStats {
